@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, People, Planet
+from models import db, User, People, Planet, Favorite
 #from models import Person
 
 app = Flask(__name__)
@@ -36,14 +36,88 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/user', methods=['GET'])
-def handle_hello():
+#USER
+@app.route('/users', methods=['GET'])
+def get_all_user():
+    all_users = User.query.all()
+    return jsonify(list(map(lambda item: item.serialize(), all_users))), 200
 
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
+@app.route('/users/favorites', methods=['GET'])
+def get_user_favorites():
 
-    return jsonify(response_body), 200
+    user = User.query.all()
+    favorite = Favorite.query.all()
+    print( list(map(lambda item: item.serialize(), list(favorite))))
+
+    return jsonify({"message" : "favo"}), 200 
+
+@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
+def add_planet_favorite(planet_id = None):
+
+    user = User.query.all()
+
+    favorite = Favorite()
+    favorite.user_id = user[0].id
+    favorite.planet_id = planet_id
+
+    db.session.add(favorite)
+
+    try:
+        db.session.commit()
+    except Exception as err:
+        db.session.rollback()
+        return jsonify({'message': err.args}), 500  
+    
+    return jsonify({"message" : "Planet add to favorites"}), 200 
+
+@app.route('/favorite/people/<int:people_id>', methods=['POST'])
+def add_person_favorite(people_id = None):
+
+    user = User.query.all()
+
+    favorite = Favorite()
+    favorite.user_id = user[0].id
+    favorite.people_id = people_id
+
+    db.session.add(favorite)
+
+    try:
+        db.session.commit()
+    except Exception as err:
+        db.session.rollback()
+        return jsonify({'message': err.args}), 500  
+    
+    return jsonify({"message" : "Person add to favorites"}), 200 
+
+@app.route('/favorite/people/<int:people_id>', methods=['DELETE'])
+def delete_people(people_id = None):
+
+    people = Favorite.query.filter_by(people_id = people_id).first()
+
+    db.session.delete(people)
+
+    try:
+        db.session.commit()
+    except Exception as err:
+        db.session.rollback()
+        return jsonify({'message': err.args}), 500 
+    
+    return jsonify({"message" : "Person add to favorites"}), 200 
+
+@app.route('/favorite/people/<int:planet_id>', methods=['DELETE'])
+def delete_planet(planet_id = None):
+
+    planet = Favorite.query.filter_by(planet_id = planet_id).first()
+
+    db.session.delete(planet)
+
+    try:
+        db.session.commit()
+    except Exception as err:
+        db.session.rollback()
+        return jsonify({'message': err.args}), 500 
+    
+    return jsonify({"message" : "Person add to favorites"}), 200 
 
 #PEOPLE
 @app.route('/people')
