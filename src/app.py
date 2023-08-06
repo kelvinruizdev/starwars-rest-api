@@ -42,26 +42,28 @@ def get_all_user():
     all_users = User.query.all()
     return jsonify(list(map(lambda item: item.serialize(), all_users))), 200
 
-@app.route('/users/favorites', methods=['GET'])
-def get_user_favorites():
+@app.route('/user/<int:user_id>/favorites', methods=['GET'])
+def get_user_favorites(user_id = None):
 
-    user = User.query.all()
-    favorite_people = Favorite_people.query.filter_by(user_id = user[0].id)
-    favorite_planet = Favorite_planet.query.filter_by(user_id = user[0].id)
+    #user = User.query.filter_by()
+    favorite_people = Favorite_people.query.filter_by(user_id = user_id)
+    favorite_planet = Favorite_planet.query.filter_by(user_id = user_id)
     favorites = list(map(lambda item: item.serialize(), favorite_planet))
     favorites.append(list(map(lambda item: item.serialize(), favorite_people)))
     return jsonify(favorites), 200 
 
-@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
-def add_planet_favorite(planet_id = None):
+@app.route('/user/<int:user_id>/favorite/planet/<int:planet_id>', methods=['POST'])
+def add_planet_favorite(user_id = None, planet_id = None):
 
-    user = User.query.all()
+    user = User.query.filter_by(id = user_id).one_or_none()
+    if user is None:
+        return jsonify({"message" : "No existe el usuario"}), 400
     planet_to_add = Planet.query.filter_by(id = planet_id).one_or_none()
     if planet_to_add is None:
         return jsonify({"message" : "No existe el planeta"}), 400 
 
     favorite = Favorite_planet()
-    favorite.user_id = user[0].id
+    favorite.user_id = user.id
     favorite.planet_id = planet_to_add.id
 
     db.session.add(favorite)
@@ -74,16 +76,18 @@ def add_planet_favorite(planet_id = None):
     
     return jsonify({"message" : "Planet add to favorites"}), 200 
 
-@app.route('/favorite/people/<int:people_id>', methods=['POST'])
-def add_person_favorite(people_id = None):
+@app.route('/user/<int:user_id>/favorite/people/<int:people_id>', methods=['POST'])
+def add_person_favorite(user_id = None, people_id = None):
 
-    user = User.query.all()
+    user = User.query.filter_by(id = user_id).one_or_none()
+    if user is None:
+        return jsonify({"message" : "No existe el usuario"}), 400
     person_to_add = People.query.filter_by(id = people_id).one_or_none()
     if person_to_add is None:
         return jsonify({"message" : "No existe la persona"}), 400 
 
     favorite = Favorite_people()
-    favorite.user_id = user[0].id
+    favorite.user_id = user.id
     favorite.people_id = person_to_add.id
 
     db.session.add(favorite)
@@ -96,11 +100,13 @@ def add_person_favorite(people_id = None):
     
     return jsonify({"message" : "Person add to favorites"}), 200 
 
-@app.route('/favorite/people/<int:people_id>', methods=['DELETE'])
-def delete_people(people_id = None):
+@app.route('/user/<int:user_id>/favorite/people/<int:people_id>', methods=['DELETE'])
+def delete_people(user_id = None, people_id = None):
 
-    people_to_delete = Favorite_people.query.filter_by(people_id = people_id).first()
-
+    people_to_delete = Favorite_people.query.filter_by(user_id = user_id, people_id = people_id).first()
+    if people_to_delete is None:
+        return jsonify({"message" : "No se encontro un usuario o people"}), 400
+    
     db.session.delete(people_to_delete)
 
     try:
@@ -111,10 +117,12 @@ def delete_people(people_id = None):
     
     return jsonify({"message" : "Person delete from favorites"}), 200 
 
-@app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
-def delete_planet(planet_id = None):
+@app.route('/user/<int:user_id>/favorite/planet/<int:planet_id>', methods=['DELETE'])
+def delete_planet(user_id = None, planet_id = None):
 
-    planet_to_delete = Favorite_planet.query.filter_by(planet_id = planet_id).first()
+    planet_to_delete = Favorite_planet.query.filter_by(user_id = user_id, planet_id = planet_id).first()
+    if planet_to_delete is None:
+        return jsonify({"message" : "No se encontro un usuario o planeta"}), 400 
 
     db.session.delete(planet_to_delete)
 
